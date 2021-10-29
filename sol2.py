@@ -1,16 +1,14 @@
-# This is a sample Python script.
-
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+import numpy as np
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+def DFT(signal):
+    """
+    transform a 1D discrete signal to its Fourier representation
+    :param signal: rray of dtype float64 with shape (N,) or (N,1)
+    :return: array of dtype complex128 with the same shape of input
+    """
+    N = signal.shape[0] # num of sumples
+    range_N = np.arange(N)
+    vandermonde_mat = np.exp((-2j * np.pi / N ) * (range_N.reshape(N,1) * range_N))
+    return vandermonde_mat @ signal
 
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
