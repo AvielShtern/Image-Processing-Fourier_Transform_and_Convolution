@@ -98,6 +98,8 @@ def change_rate(filename, ratio):
     :param ratio: positive float64 repre- senting the duration change. (assume that 0.25 < ratio < 4)
     :return: None (saves the audio in a new file "called change_rate.wav")
     """
+    rate, data = read(filename)
+    write("change_rate.wav",rate * ratio, data)
 
 if __name__ == '__main__':
     # im = read_image("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/ract.jpg",1)
