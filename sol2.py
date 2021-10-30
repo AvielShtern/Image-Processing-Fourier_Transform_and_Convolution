@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from skimage.color import rgb2gray
 from numpy.fft import fft, fft2, ifft, ifft2
 import time
+from scipy.io.wavfile import read, write
 
 GRAYSCALE_REPRESENTATION = 1
 RGB_REPRESENTATION = 2
@@ -89,6 +90,14 @@ def IDFT2(fourier_image):
     idft_on_each_row = np.array([IDFT(fourier_image[row]) for row in range(fourier_image.shape[0])])
     return np.array([IDFT(idft_on_each_row[:, col]) for col in range(fourier_image.shape[1])]).T
 
+
+def change_rate(filename, ratio):
+    """
+    changes the duration of an audio file by keeping the same samples.
+    :param filename: a string representing the path to a WAV file
+    :param ratio: positive float64 repre- senting the duration change. (assume that 0.25 < ratio < 4)
+    :return: None (saves the audio in a new file "called change_rate.wav")
+    """
 
 if __name__ == '__main__':
     # im = read_image("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/ract.jpg",1)
