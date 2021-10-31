@@ -3,7 +3,7 @@ from numpy.linalg import norm
 from imageio import imread
 import matplotlib.pyplot as plt
 from skimage.color import rgb2gray
-from numpy.fft import fft, fft2, ifft, ifft2
+from numpy.fft import fft, fft2, ifft, ifft2, fftshift, ifftshift
 import time
 from scipy.io.wavfile import read, write
 
@@ -13,6 +13,7 @@ MIN_LEVEL = 0
 MAX_LEVEL = 255
 DIM_IMAGE_GRAY = 2
 DIM_IMAGE_RGB = 3
+
 
 def read_image(filename, representation):
     """
@@ -43,13 +44,15 @@ def imdisplay(filename, representation):
     plt.axis("off")
     plt.show()
 
+
 def DFT(signal):
     """
     transform a 1D discrete signal to its Fourier representation
     :param signal: rray of dtype float64 with shape (N,) or (N,1)
     :return: array of dtype complex128 with the same shape of input
     """
-    return vandermonde_mat(signal.shape[0], -1, 1) @ signal
+    # return vandermonde_mat(signal.shape[0], -1, 1) @ signal
+    return fft(signal)
 
 
 def IDFT(fourier_signal):
@@ -58,7 +61,8 @@ def IDFT(fourier_signal):
     :param fourier_signal: array of dtype complex128 with shape (N,) or (N,1)
     :return: array of dtype complex128 with the same shape of input
     """
-    return vandermonde_mat(fourier_signal.shape[0], 1, fourier_signal.shape[0]) @ fourier_signal
+    # return vandermonde_mat(fourier_signal.shape[0], 1, fourier_signal.shape[0]) @ fourier_signal
+    return ifft(fourier_signal)
 
 
 def vandermonde_mat(N, type, divider):
@@ -79,7 +83,8 @@ def DFT2(image):
     :return: array of dtype complex128 with the same shape of input
     """
     dft_on_each_row = np.array([DFT(image[row]) for row in range(image.shape[0])])
-    return np.array([DFT(dft_on_each_row[:,col]) for col in range(image.shape[1])]).T
+    return np.array([DFT(dft_on_each_row[:, col]) for col in range(image.shape[1])]).T
+
 
 def IDFT2(fourier_image):
     """
@@ -99,7 +104,36 @@ def change_rate(filename, ratio):
     :return: None (saves the audio in a new file "called change_rate.wav")
     """
     rate, data = read(filename)
-    write("change_rate.wav",rate * ratio, data)
+    write("change_rate.wav", int(np.around(rate * ratio)), data)
+
+
+def change_samples(filename, ratio):
+    """
+    changes the duration of an audio file by reducing the number of samples using Fourier
+    :param filename:  a string representing the path to a WAV file
+    :param ratio: a positive float64 repre- senting the duration change
+    :return: None. (result should be saved in a file called change_samples.wav)
+    """
+    rate, data = read(filename)
+    write("change_rate.wav", rate, resize(data,ratio).real)
+
+def resize(data, ratio):
+    """
+    resize the signal
+    :param data: is a 1D ndarray of dtype float64 or complex128 representing the original sample points
+    :param ratio: a positive float64 repre- senting the duration change
+    :return: 1D ndarray of the dtype of data representing the new sample points
+    """
+    num_of_samples = data.shape[0]
+    num_to_add_or_reduce = int(np.abs(num_of_samples * (1 / ratio) - num_of_samples))
+    dft_shifted = fftshift(DFT(data))
+    before = int(num_to_add_or_reduce/ 2)
+    end = int(np.ceil(num_to_add_or_reduce / 2))
+    menipulate_dft_shifted = np.pad(dft_shifted, (before, end), 'constant', constant_values=(0)) if ratio < 0 \
+                     else dft_shifted[before: -end] if ratio > 1 else dft_shifted
+
+    return IDFT(ifftshift(menipulate_dft_shifted))
+
 
 if __name__ == '__main__':
     # im = read_image("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/ract.jpg",1)
@@ -110,12 +144,17 @@ if __name__ == '__main__':
     # plt.axis("off")
     # plt.show()
 
-    signal = np.random.randint(255, size=(500,500))
-    beforeme = time.time()
-    my_dft = DFT2(signal)
-    afterme = time.time()
-    before_np = time.time()
-    np_dft = fft2(signal)
-    after_numpy = time.time()
-    print(np.allclose(my_dft,np_dft))
-    print(f"me: {afterme - beforeme}. numpy: {after_numpy - before_np}")
+    # signal = np.random.randint(255, size=(500,500))
+    # beforeme = time.time()
+    # my_dft = DFT2(signal)
+    # afterme = time.time()
+    # before_np = time.time()
+    # np_dft = fft2(signal)
+    # after_numpy = time.time()
+    # print(np.allclose(my_dft,np_dft))
+    # print(f"me: {afterme - beforeme}. numpy: {after_numpy - before_np}")
+    rate, data = read("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/disco_dancing.wav")
+    write("hhh.wav",rate,ifft(fft(data)).real)
+    print(np.allclose(data, ifft(fft(data)).real))
+    print(len(data))
+    change_samples("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/disco_dancing.wav", 1)
