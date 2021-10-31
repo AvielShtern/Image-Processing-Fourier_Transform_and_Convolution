@@ -158,3 +158,4 @@ if __name__ == '__main__':
     print(np.allclose(data, ifft(fft(data)).real))
     print(len(data))
     change_samples("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/disco_dancing.wav", 1)
+    print(8)
