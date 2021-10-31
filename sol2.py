@@ -6,6 +6,7 @@ from skimage.color import rgb2gray
 from numpy.fft import fft, fft2, ifft, ifft2, fftshift, ifftshift
 import time
 from scipy.io.wavfile import read, write
+from ex2_helper import *
 
 GRAYSCALE_REPRESENTATION = 1
 RGB_REPRESENTATION = 2
@@ -101,7 +102,7 @@ def change_rate(filename, ratio):
     changes the duration of an audio file by keeping the same samples.
     :param filename: a string representing the path to a WAV file
     :param ratio: positive float64 repre- senting the duration change. (assume that 0.25 < ratio < 4)
-    :return: None (saves the audio in a new file "called change_rate.wav")
+    :return: None (saves the audio in a new file called "change_rate.wav")
     """
     rate, data = read(filename)
     write("change_rate.wav", int(np.around(rate * ratio)), data)
@@ -112,10 +113,10 @@ def change_samples(filename, ratio):
     changes the duration of an audio file by reducing the number of samples using Fourier
     :param filename:  a string representing the path to a WAV file
     :param ratio: a positive float64 repre- senting the duration change
-    :return: None. (result should be saved in a file called change_samples.wav)
+    :return: None. (result should be saved in a file called "change_samples.wav")
     """
     rate, data = read(filename)
-    write("change_rate.wav", rate, resize(data,ratio).real)
+    write("change_samples.wav", rate, resize(data,ratio).real)
 
 def resize(data, ratio):
     """
@@ -135,27 +136,27 @@ def resize(data, ratio):
     return IDFT(ifftshift(menipulate_dft_shifted))
 
 
-if __name__ == '__main__':
-    # im = read_image("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/ract.jpg",1)
-    # print(im.shape)
-    # im_dft = DFT2(im)
-    # plt.figure()
-    # plt.imshow(norm(im_dft.reshape(im.shape[0],im.shape[1],1), axis=2), cmap='gray')
-    # plt.axis("off")
-    # plt.show()
+def resize_spectrogram(data, ratio):
+    """
+    speeds up a WAV file, without changing the pitch, using spectrogram scaling.
+    :param data: a 1D ndarray of dtype float64 representing the original sample points
+    :param ratio: a positive float64 representing the rate change of the WAV file
+    :return: new sample points according to ratio with the same datatype as data.
+    """
+    stft_of_data = stft(data).T # stft return a metrix with shape (win_length,n_frames) ??? why every "row" and not col??
+    data_menipulate = np.array([resize(stft_of_data[row], ratio) for row in range(stft_of_data.shape[0])]).T
+    return istft(data_menipulate, int(stft_of_data[0].shape[0] * 1/ratio)) # change the window size????
 
-    # signal = np.random.randint(255, size=(500,500))
-    # beforeme = time.time()
-    # my_dft = DFT2(signal)
-    # afterme = time.time()
-    # before_np = time.time()
-    # np_dft = fft2(signal)
-    # after_numpy = time.time()
-    # print(np.allclose(my_dft,np_dft))
-    # print(f"me: {afterme - beforeme}. numpy: {after_numpy - before_np}")
+
+
+
+if __name__ == '__main__':
     rate, data = read("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/disco_dancing.wav")
-    write("hhh.wav",rate,ifft(fft(data)).real)
-    print(np.allclose(data, ifft(fft(data)).real))
-    print(len(data))
-    change_samples("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/disco_dancing.wav", 1)
-    print(8)
+    # data_to_work = data[:2000,0]
+    # print(data_to_work.shape)
+    # stft_data = stft(data_to_work)
+    # print(stft_data.shape)
+    # istft_data  = istft(stft_data)
+    # print(istft_data.shape)
+    resize_spectrogram(data[:,0],2)
+
