@@ -137,15 +137,26 @@ def resize(data, ratio):
     :param ratio: a positive float64 repre- senting the duration change
     :return: 1D ndarray of the dtype of data representing the new sample points
     """
+    # num_of_samples = data.shape[0]
+    # num_to_add_or_reduce = int(np.abs(num_of_samples * (1 / ratio) - num_of_samples))
+    # dft_shifted = fftshift(DFT(data))
+    # before = int(num_to_add_or_reduce / 2)
+    # end = int(np.ceil(num_to_add_or_reduce / 2))
+    # menipulate_dft_shifted = np.pad(dft_shifted, (before, end), 'constant', constant_values=(0)) if ratio < 1 \
+    #     else dft_shifted[before: -end] if ratio > 1 else dft_shifted
+    #
+    # return IDFT(ifftshift(menipulate_dft_shifted))
     num_of_samples = data.shape[0]
-    num_to_add_or_reduce = int(np.abs(num_of_samples * (1 / ratio) - num_of_samples))
+    new = int(num_of_samples * (1 / ratio))
     dft_shifted = fftshift(DFT(data))
-    before = int(num_to_add_or_reduce / 2)
-    end = int(np.ceil(num_to_add_or_reduce / 2))
-    menipulate_dft_shifted = np.pad(dft_shifted, (before, end), 'constant', constant_values=(0)) if ratio < 1 \
-        else dft_shifted[before: -end] if ratio > 1 else dft_shifted
-
+    num_to_add_or_reduce = int(np.abs(new - num_of_samples))
+    before = np.ceil(num_to_add_or_reduce / 2)
+    fac = num_to_add_or_reduce % 2
+    end = num_of_samples - before + fac
+    menipulate_dft_shifted = np.pad(dft_shifted, (before, before + fac), 'constant', constant_values=(0)) if ratio < 1 \
+        else dft_shifted[before: end] if ratio > 1 else dft_shifted
     return IDFT(ifftshift(menipulate_dft_shifted))
+
 
 
 def resize_spectrogram(data, ratio):
