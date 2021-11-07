@@ -150,7 +150,7 @@ def resize(data, ratio):
     new = int(num_of_samples * (1 / ratio))
     dft_shifted = fftshift(DFT(data))
     num_to_add_or_reduce = int(np.abs(new - num_of_samples))
-    before = np.ceil(num_to_add_or_reduce / 2)
+    before = int(np.ceil(num_to_add_or_reduce / 2))
     fac = num_to_add_or_reduce % 2
     end = num_of_samples - before + fac
     menipulate_dft_shifted = np.pad(dft_shifted, (before, before + fac), 'constant', constant_values=(0)) if ratio < 1 \
