@@ -85,9 +85,11 @@ def DFT2(image):
     """
     # dft_on_each_row = np.array([DFT(image[row]) for row in range(image.shape[0])])
     # return np.array([DFT(dft_on_each_row[:, col]) for col in range(image.shape[1])]).T
-    van_row = vandermonde_mat(image.shape[0], -1, 1)
-    van_col = vandermonde_mat(image.shape[1], -1, 1)
-    return van_row @ image @ van_col.T
+
+    # van_row = vandermonde_mat(image.shape[0], -1, 1)
+    # van_col = vandermonde_mat(image.shape[1], -1, 1)
+    # return van_row @ image @ van_col.T
+    return fft2(image)
 
 
 def IDFT2(fourier_image):
@@ -98,9 +100,12 @@ def IDFT2(fourier_image):
     """
     # idft_on_each_row = np.array([IDFT(fourier_image[row]) for row in range(fourier_image.shape[0])])
     # return np.array([IDFT(idft_on_each_row[:, col]) for col in range(fourier_image.shape[1])]).T
-    van_row = vandermonde_mat(fourier_image.shape[0], 1, fourier_image.shape[0])
-    van_col = vandermonde_mat(fourier_image.shape[1], 1, fourier_image.shape[1])
-    return van_row @ fourier_image @ van_col.T
+    #
+    # van_row = vandermonde_mat(fourier_image.shape[0], 1, fourier_image.shape[0])
+    # van_col = vandermonde_mat(fourier_image.shape[1], 1, fourier_image.shape[1])
+    # return van_row @ fourier_image @ van_col.T
+
+    return ifft2(fourier_image)
 
 
 def change_rate(filename, ratio):
@@ -173,7 +178,7 @@ def conv_der(im):
     :param im: grayscale image of type float64
     :return: the magnitude of the derivative (using convolution)
     """
-    der_x_kernel = np.array([0.5, 0, -0.5])  # kernel of derivative (df/dx)
+    der_x_kernel = np.array([[0.5, 0, -0.5]])  # kernel of derivative (df/dx)
     der_y_kernel = der_x_kernel.T
     x_derivative = convolve2d(im, der_x_kernel, mode='same')
     y_derivative = convolve2d(im, der_y_kernel, mode='same')
@@ -188,7 +193,9 @@ def fourier_der(im):
     :return: the magnitude of the derivative (using Fourier transform)
     """
     fourier_shifted = fftshift(DFT2(im))
-    fourier_mult = [(2j * np.pi / dim) * np.arange(int(-dim / 2), int(dim / 2) + dim % 2) for dim in im.shape]
+    # fourier_mult = [(2j * np.pi / dim) * np.arange(int(-dim / 2), int(dim / 2) + dim % 2) for dim in im.shape]
+
+    fourier_mult = [np.arange(int(-dim / 2), int(dim / 2) + dim % 2) for dim in im.shape]
     # 2PIi * [-N/2... N/2],2PIi [-M/2....M/2] where im.shape = (N,M)
     fourier_der_row = ifftshift((fourier_shifted.T * fourier_mult[0]).T)  # (2PIi/N)uF(u,v)
     fourier_der_col = ifftshift(fourier_shifted * fourier_mult[1])  # (2PIi/M)vF(u,v)
@@ -261,20 +268,25 @@ def phase_vocoder(spec, ratio):
 
     return warped_spec
 
+# if __name__ == '__main__':
+#     # path = "/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/ex2_presubmit/aria_4kHz.wav"
+#     # rate, data = read(path)
+#     # datatype = data.dtype
+#     # data = resize_vocoder(data, 1.5)
+#     # write("res.wav", rate, data.real.astype(datatype))
+#     # rate, data = read("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/disco_dancing.wav")
+#     # write("new.wav",rate,data[:,0])
+#     # write("new.wav",rate,resize_spectrogram(data[:,0],2).real)
+#     # data_to_work = data[:2000,0]
+#     # print(data_to_work.shape)
+#     # stft_data = stft(data_to_work)
+#     # print(stft_data.shape)
+#     # istft_data  = istft(stft_data)
+#     # print(istft_data.shape)
+#     # resize_spectrogram(data[:,0],2)
+#     path = "/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX1/ex1-aviel.shtern/examples/monkey.jpg"
+#     im = read_image(path,1)
+#     mag_ber = conv_der(im)
+#     mag_four = fourier_der(im)
+#     print(np.allclose(mag_ber,mag_four))
 
-if __name__ == '__main__':
-    path = "/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/ex2_presubmit/aria_4kHz.wav"
-    rate, data = read(path)
-    datatype = data.dtype
-    data = resize_vocoder(data, 1.5)
-    write("res.wav", rate, data.real.astype(datatype))
-    # rate, data = read("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/disco_dancing.wav")
-    # write("new.wav",rate,data[:,0])
-    # write("new.wav",rate,resize_spectrogram(data[:,0],2).real)
-    # data_to_work = data[:2000,0]
-    # print(data_to_work.shape)
-    # stft_data = stft(data_to_work)
-    # print(stft_data.shape)
-    # istft_data  = istft(stft_data)
-    # print(istft_data.shape)
-    # resize_spectrogram(data[:,0],2)
