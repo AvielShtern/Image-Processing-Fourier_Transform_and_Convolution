@@ -1,14 +1,12 @@
 import numpy as np
-from numpy.linalg import norm
+from scipy import signal
+from scipy.ndimage.interpolation import map_coordinates
 from imageio import imread
 import matplotlib.pyplot as plt
 from skimage.color import rgb2gray
 from numpy.fft import fft, fft2, ifft, ifft2, fftshift, ifftshift
-import time
 from scipy.io.wavfile import read, write
 from scipy.signal import convolve2d
-
-from ex2_helper import *
 
 GRAYSCALE_REPRESENTATION = 1
 RGB_REPRESENTATION = 2
@@ -171,16 +169,97 @@ def resize_vocoder(data, ratio):
 
 def conv_der(im):
     """
-    computes the magnitude of image derivatives
+    computes the magnitude of image derivatives using convolution
     :param im: grayscale image of type float64
-    :return: the magnitude of the derivative
+    :return: the magnitude of the derivative (using convolution)
     """
-    der_x_kernel = np.array([0.5, 0,−0.5])  # kernel of derivative (df/dx)
+    der_x_kernel = np.array([0.5, 0, -0.5])  # kernel of derivative (df/dx)
     der_y_kernel = der_x_kernel.T
     x_derivative = convolve2d(im, der_x_kernel, mode='same')
     y_derivative = convolve2d(im, der_y_kernel, mode='same')
     magnitude = np.sqrt(np.abs(x_derivative) ** 2 + np.abs(y_derivative) ** 2)
     return magnitude.astype(im.dtype)
+
+
+def fourier_der(im):
+    """
+    computes the magnitude of the image derivatives using Fourier transform
+    :param im: grayscale image of type float64
+    :return: the magnitude of the derivative (using Fourier transform)
+    """
+    fourier_shifted = fftshift(DFT2(im))
+    fourier_mult = [(2j * np.pi / dim) * np.arange(int(-dim / 2), int(dim / 2) + dim % 2) for dim in im.shape]
+    # 2PIi * [-N/2... N/2],2PIi [-M/2....M/2] where im.shape = (N,M)
+    fourier_der_row = ifftshift((fourier_shifted.T * fourier_mult[0]).T)  # (2PIi/N)uF(u,v)
+    fourier_der_col = ifftshift(fourier_shifted * fourier_mult[1])  # (2PIi/M)vF(u,v)
+    magnitude = np.sqrt(np.abs(IDFT2(fourier_der_row)) ** 2 + np.abs(IDFT2(fourier_der_col)) ** 2)
+    return magnitude.astype(im.dtype)
+
+
+############################################### copy from ex2.helper ###############################################
+
+def stft(y, win_length=640, hop_length=160):
+    fft_window = signal.windows.hann(win_length, False)
+
+    # Window the time series.
+    n_frames = 1 + (len(y) - win_length) // hop_length
+    frames = [y[s:s + win_length] for s in np.arange(n_frames) * hop_length]
+
+    stft_matrix = np.fft.fft(fft_window * frames, axis=1)
+    return stft_matrix.T
+
+
+def istft(stft_matrix, win_length=640, hop_length=160):
+    n_frames = stft_matrix.shape[1]
+    y_rec = np.zeros(win_length + hop_length * (n_frames - 1), dtype=np.float)
+    ifft_window_sum = np.zeros_like(y_rec)
+
+    ifft_window = signal.windows.hann(win_length, False)[:, np.newaxis]
+    win_sq = ifft_window.squeeze() ** 2
+
+    # invert the block and apply the window function
+    ytmp = ifft_window * np.fft.ifft(stft_matrix, axis=0).real
+
+    for frame in range(n_frames):
+        frame_start = frame * hop_length
+        frame_end = frame_start + win_length
+        y_rec[frame_start: frame_end] += ytmp[:, frame]
+        ifft_window_sum[frame_start: frame_end] += win_sq
+
+    # Normalize by sum of squared window
+    y_rec[ifft_window_sum > 0] /= ifft_window_sum[ifft_window_sum > 0]
+    return y_rec
+
+
+def phase_vocoder(spec, ratio):
+    num_timesteps = int(spec.shape[1] / ratio)
+    time_steps = np.arange(num_timesteps) * ratio
+
+    # interpolate magnitude
+    yy = np.meshgrid(np.arange(time_steps.size), np.arange(spec.shape[0]))[1]
+    xx = np.zeros_like(yy)
+    coordiantes = [yy, time_steps + xx]
+    warped_spec = map_coordinates(np.abs(spec), coordiantes, mode='reflect', order=1).astype(np.complex)
+
+    # phase vocoder
+    # Phase accumulator; initialize to the first sample
+    spec_angle = np.pad(np.angle(spec), [(0, 0), (0, 1)], mode='constant')
+    phase_acc = spec_angle[:, 0]
+
+    for (t, step) in enumerate(np.floor(time_steps).astype(np.int)):
+        # Store to output array
+        warped_spec[:, t] *= np.exp(1j * phase_acc)
+
+        # Compute phase advance
+        dphase = (spec_angle[:, step + 1] - spec_angle[:, step])
+
+        # Wrap to -pi:pi range
+        dphase = np.mod(dphase - np.pi, 2 * np.pi) - np.pi
+
+        # Accumulate phase
+        phase_acc += dphase
+
+    return warped_spec
 
 
 if __name__ == '__main__':
