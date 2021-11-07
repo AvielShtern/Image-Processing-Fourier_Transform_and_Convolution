@@ -6,6 +6,8 @@ from skimage.color import rgb2gray
 from numpy.fft import fft, fft2, ifft, ifft2, fftshift, ifftshift
 import time
 from scipy.io.wavfile import read, write
+from scipy.signal import convolve2d
+
 from ex2_helper import *
 
 GRAYSCALE_REPRESENTATION = 1
@@ -83,8 +85,11 @@ def DFT2(image):
     :param image: grayscale image of dtype float64 with shape (M,N) or (M,N,1)
     :return: array of dtype complex128 with the same shape of input
     """
-    dft_on_each_row = np.array([DFT(image[row]) for row in range(image.shape[0])])
-    return np.array([DFT(dft_on_each_row[:, col]) for col in range(image.shape[1])]).T
+    # dft_on_each_row = np.array([DFT(image[row]) for row in range(image.shape[0])])
+    # return np.array([DFT(dft_on_each_row[:, col]) for col in range(image.shape[1])]).T
+    van_row = vandermonde_mat(image.shape[0], -1, 1)
+    van_col = vandermonde_mat(image.shape[1], -1, 1)
+    return van_row @ image @ van_col.T
 
 
 def IDFT2(fourier_image):
@@ -93,8 +98,11 @@ def IDFT2(fourier_image):
     :param fourier_image: 2D array of dtype complex128 with shape (M,N) or (M,N,1)
     :return: array of dtype complex128 with the same shape of input
     """
-    idft_on_each_row = np.array([IDFT(fourier_image[row]) for row in range(fourier_image.shape[0])])
-    return np.array([IDFT(idft_on_each_row[:, col]) for col in range(fourier_image.shape[1])]).T
+    # idft_on_each_row = np.array([IDFT(fourier_image[row]) for row in range(fourier_image.shape[0])])
+    # return np.array([IDFT(idft_on_each_row[:, col]) for col in range(fourier_image.shape[1])]).T
+    van_row = vandermonde_mat(fourier_image.shape[0], 1, fourier_image.shape[0])
+    van_col = vandermonde_mat(fourier_image.shape[1], 1, fourier_image.shape[1])
+    return van_row @ fourier_image @ van_col.T
 
 
 def change_rate(filename, ratio):
@@ -116,7 +124,8 @@ def change_samples(filename, ratio):
     :return: None. (result should be saved in a file called "change_samples.wav")
     """
     rate, data = read(filename)
-    write("change_samples.wav", rate, resize(data,ratio).real)
+    write("change_samples.wav", rate, resize(data, ratio).real)
+
 
 def resize(data, ratio):
     """
@@ -128,10 +137,10 @@ def resize(data, ratio):
     num_of_samples = data.shape[0]
     num_to_add_or_reduce = int(np.abs(num_of_samples * (1 / ratio) - num_of_samples))
     dft_shifted = fftshift(DFT(data))
-    before = int(num_to_add_or_reduce/ 2)
+    before = int(num_to_add_or_reduce / 2)
     end = int(np.ceil(num_to_add_or_reduce / 2))
     menipulate_dft_shifted = np.pad(dft_shifted, (before, end), 'constant', constant_values=(0)) if ratio < 1 \
-                     else dft_shifted[before: -end] if ratio > 1 else dft_shifted
+        else dft_shifted[before: -end] if ratio > 1 else dft_shifted
 
     return IDFT(ifftshift(menipulate_dft_shifted))
 
@@ -143,9 +152,9 @@ def resize_spectrogram(data, ratio):
     :param ratio: a positive float64 representing the rate change of the WAV file
     :return: new sample points according to ratio with the same datatype as data.
     """
-    stft_of_data = stft(data).T # stft return a metrix with shape (win_length,n_frames) ??? why every "row" and not col??
-    data_menipulate = np.array([resize(stft_of_data[row], ratio) for row in range(stft_of_data.shape[0])]).T
-    ret_val = istft(data_menipulate, int(stft_of_data[0].shape[0] * 1/ratio)) # change the window size????
+    stft_of_data = stft(data)  # stft return a metrix with shape (win_length,n_frames) ??? why every "row" and not col??
+    data_menipulate = np.array([resize(stft_of_data[row], ratio) for row in range(stft_of_data.shape[0])])
+    ret_val = istft(data_menipulate)  # change the window size????
     # ret_val = istft(data_menipulate)
     return ret_val
 
@@ -157,14 +166,29 @@ def resize_vocoder(data, ratio):
     :param ratio: a positive float64 representing the rate change of the WAV file
     :return: return the given data rescaled according to ratio with the same datatype as data.
     """
-    return istft(phase_vocoder(stft(data),ratio))
+    return istft(phase_vocoder(stft(data), ratio))
+
+
+def conv_der(im):
+    """
+    computes the magnitude of image derivatives
+    :param im: grayscale image of type float64
+    :return: the magnitude of the derivative
+    """
+    der_x_kernel = np.array([0.5, 0,−0.5])  # kernel of derivative (df/dx)
+    der_y_kernel = der_x_kernel.T
+    x_derivative = convolve2d(im, der_x_kernel, mode='same')
+    y_derivative = convolve2d(im, der_y_kernel, mode='same')
+    magnitude = np.sqrt(np.abs(x_derivative) ** 2 + np.abs(y_derivative) ** 2)
+    return magnitude.astype(im.dtype)
 
 
 if __name__ == '__main__':
     path = "/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/ex2_presubmit/aria_4kHz.wav"
-    rate,data = read(path)
-    data = resize_spectrogram(data,2)
-    write("res.wav",rate,data.real)
+    rate, data = read(path)
+    datatype = data.dtype
+    data = resize_vocoder(data, 1.5)
+    write("res.wav", rate, data.real.astype(datatype))
     # rate, data = read("/Users/avielshtern/Desktop/third_year/IMAGE_PROCESSING/EX/EX2/disco_dancing.wav")
     # write("new.wav",rate,data[:,0])
     # write("new.wav",rate,resize_spectrogram(data[:,0],2).real)
@@ -175,4 +199,3 @@ if __name__ == '__main__':
     # istft_data  = istft(stft_data)
     # print(istft_data.shape)
     # resize_spectrogram(data[:,0],2)
-
