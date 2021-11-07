@@ -52,8 +52,8 @@ def DFT(signal):
     :param signal: rray of dtype float64 with shape (N,) or (N,1)
     :return: array of dtype complex128 with the same shape of input
     """
-    # return vandermonde_mat(signal.shape[0], -1, 1) @ signal
-    return fft(signal)
+    return vandermonde_mat(signal.shape[0], -1, 1) @ signal
+    # return fft(signal)
 
 
 def IDFT(fourier_signal):
@@ -62,8 +62,8 @@ def IDFT(fourier_signal):
     :param fourier_signal: array of dtype complex128 with shape (N,) or (N,1)
     :return: array of dtype complex128 with the same shape of input
     """
-    # return vandermonde_mat(fourier_signal.shape[0], 1, fourier_signal.shape[0]) @ fourier_signal
-    return ifft(fourier_signal)
+    return vandermonde_mat(fourier_signal.shape[0], 1, fourier_signal.shape[0]) @ fourier_signal
+    # return ifft(fourier_signal)
 
 
 def vandermonde_mat(N, type, divider):
@@ -86,10 +86,10 @@ def DFT2(image):
     # dft_on_each_row = np.array([DFT(image[row]) for row in range(image.shape[0])])
     # return np.array([DFT(dft_on_each_row[:, col]) for col in range(image.shape[1])]).T
 
-    # van_row = vandermonde_mat(image.shape[0], -1, 1)
-    # van_col = vandermonde_mat(image.shape[1], -1, 1)
-    # return van_row @ image @ van_col.T
-    return fft2(image)
+    van_row = vandermonde_mat(image.shape[0], -1, 1)
+    van_col = vandermonde_mat(image.shape[1], -1, 1)
+    return van_row @ image @ van_col.T
+    # return fft2(image)
 
 
 def IDFT2(fourier_image):
@@ -101,11 +101,11 @@ def IDFT2(fourier_image):
     # idft_on_each_row = np.array([IDFT(fourier_image[row]) for row in range(fourier_image.shape[0])])
     # return np.array([IDFT(idft_on_each_row[:, col]) for col in range(fourier_image.shape[1])]).T
     #
-    # van_row = vandermonde_mat(fourier_image.shape[0], 1, fourier_image.shape[0])
-    # van_col = vandermonde_mat(fourier_image.shape[1], 1, fourier_image.shape[1])
-    # return van_row @ fourier_image @ van_col.T
+    van_row = vandermonde_mat(fourier_image.shape[0], 1, fourier_image.shape[0])
+    van_col = vandermonde_mat(fourier_image.shape[1], 1, fourier_image.shape[1])
+    return van_row @ fourier_image @ van_col.T
 
-    return ifft2(fourier_image)
+    # return ifft2(fourier_image)
 
 
 def change_rate(filename, ratio):
@@ -169,7 +169,6 @@ def resize_spectrogram(data, ratio):
     stft_of_data = stft(data)  # stft return a metrix with shape (win_length,n_frames) ??? why every "row" and not col??
     data_menipulate = np.array([resize(stft_of_data[row], ratio) for row in range(stft_of_data.shape[0])])
     ret_val = istft(data_menipulate)  # change the window size????
-    # ret_val = istft(data_menipulate)
     return ret_val
 
 
