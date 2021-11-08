@@ -1,3 +1,5 @@
-Problem of division by zero.
-If a particular segment in any division has no pixels at all we will divide by zero during the definition of q for
-that segment.
+In naive fast forward of speech (change_rate) there is a side effect: pitch becomes higher.
+This happens because we raise the frequencies.
+
+On the other hand, in fast forward using fourier (change sample) the pitch is not raised higher.
+However, because the signal is not stationary, we lose the meaning of time and the frequencies from different times mix.

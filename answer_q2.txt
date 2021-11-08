@@ -1,3 +1,1 @@
-Problem of division by zero.
-If a particular segment in any division has no pixels at all we will divide by zero during the definition of q for
-that segment.
+Before we fix the phase there are a kind of jumps over time. And after the repair almost no attention is paid to them.
