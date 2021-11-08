@@ -1,7 +1,3 @@
-
-
-
-
 import numpy as np
 from scipy import signal
 from scipy.ndimage.interpolation import map_coordinates
@@ -61,7 +57,6 @@ def DFT(signal):
     :return: array of dtype complex128 with the same shape of input
     """
     return (vandermonde_mat(signal.shape[ROW], TO_FREQUENCY_SPACE, 1) @ signal).astype(np.complex128)
-    # return fft(signal)
 
 
 def IDFT(fourier_signal):
@@ -72,7 +67,6 @@ def IDFT(fourier_signal):
     """
     return (vandermonde_mat(fourier_signal.shape[ROW], FROM_FREQUENCY_SPACE,
                             fourier_signal.shape[ROW]) @ fourier_signal).astype(np.complex128)
-    # return ifft(fourier_signal)
 
 
 def vandermonde_mat(N, type, divider):
@@ -95,7 +89,6 @@ def DFT2(image):
     van_row_and_col = [vandermonde_mat(dim, TO_FREQUENCY_SPACE, 1) for dim in image.shape[:2]]
     return (van_row_and_col[ROW] @ image.reshape(image.shape[:2]) @ van_row_and_col[COL].T).astype(
         np.complex128).reshape(image.shape)
-    # return fft2(image)
 
 
 def IDFT2(fourier_image):
@@ -107,7 +100,6 @@ def IDFT2(fourier_image):
     van_row_and_col = [vandermonde_mat(dim, FROM_FREQUENCY_SPACE, dim) for dim in fourier_image.shape[:2]]
     return (van_row_and_col[ROW] @ fourier_image.reshape(fourier_image.shape[:2]) @ van_row_and_col[COL].T).astype(
         np.complex128).reshape(fourier_image.shape)
-    # return ifft2(fourier_image)
 
 
 def change_rate(filename, ratio):
@@ -144,6 +136,8 @@ def resize(data, ratio):
     """
     num_of_samples = data.shape[0]
     new_sample_size = int(num_of_samples * (1 / ratio))
+    if new_sample_size == 0:
+        return np.array([]).astype(data.dtype)
     num_to_add_or_reduce = int(np.abs(new_sample_size - num_of_samples))
 
     remainder = num_to_add_or_reduce % 2
@@ -277,8 +271,3 @@ def phase_vocoder(spec, ratio):
         phase_acc += dphase
 
     return warped_spec
-
-
-
-
-
