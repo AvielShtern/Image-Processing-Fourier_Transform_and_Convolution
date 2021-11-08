@@ -1,3 +1,0 @@
-Derived through convolution is only an approximation.
-(And the fact that we have two different kernels for the derivative function).
-On the other hand, cutting Derived by a Fourier transform is more accurate and hence the gap.
