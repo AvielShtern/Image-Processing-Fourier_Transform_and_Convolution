@@ -2,9 +2,8 @@ import numpy as np
 from scipy import signal
 from scipy.ndimage.interpolation import map_coordinates
 from imageio import imread
-import matplotlib.pyplot as plt
 from skimage.color import rgb2gray
-from numpy.fft import fft, fft2, ifft, ifft2, fftshift, ifftshift
+from numpy.fft import fftshift, ifftshift
 from scipy.io.wavfile import read, write
 from scipy.signal import convolve2d
 
@@ -34,20 +33,6 @@ def read_image(filename, representation):
         return rgb_or_gray_scale_image
     elif representation == GRAYSCALE_REPRESENTATION and rgb_or_gray_scale_image.ndim == DIM_IMAGE_RGB:
         return rgb2gray(rgb_or_gray_scale_image)
-
-
-def imdisplay(filename, representation):
-    """
-     open a new figure and display the loaded image in the converted representation
-    :param filename: the filename of an image on disk (could be grayscale or RGB).
-    :param representation: either 1 or 2 defining whether the display should be a grayscale image (1) or an RGB image (2).
-    :return: None
-    """
-    im = read_image(filename, representation)
-    plt.figure()
-    plt.imshow(im, cmap='gray')
-    plt.axis("off")
-    plt.show()
 
 
 def DFT(signal):
@@ -131,7 +116,7 @@ def resize(data, ratio):
     """
     resize the signal
     :param data: is a 1D ndarray of dtype float64 or complex128 representing the original sample points
-    :param ratio: a positive float64 repre- senting the duration change
+    :param ratio: a positive float64 reprenting the duration change
     :return: 1D ndarray of the dtype of data representing the new sample points
     """
     num_of_samples = data.shape[0]
@@ -150,7 +135,7 @@ def resize(data, ratio):
     menipulate_dft_shifted = np.pad(dft_shifted, (before_add, end_add), 'constant', constant_values=(0)) if ratio < 1 \
         else dft_shifted[before_reduce: end_reduce] if ratio > 1 else dft_shifted
     return IDFT(ifftshift(menipulate_dft_shifted)) if data.dtype == np.complex128 \
-            else IDFT(ifftshift(menipulate_dft_shifted)).real.astype(data.dtype)
+        else IDFT(ifftshift(menipulate_dft_shifted)).real.astype(data.dtype)
 
 
 def resize_spectrogram(data, ratio):
@@ -207,9 +192,14 @@ def fourier_der(im):
     return magnitude.astype(im.dtype)
 
 
-############################################### copy from ex2.helper ###############################################
-
 def stft(y, win_length=640, hop_length=160):
+    """
+    computes the spectrogram of the signal
+    :param y: the signal
+    :param win_length: Size of each window
+    :param hop_length: Overlap between windows
+    :return: The spectrogram. shape is (win_length, n_frames)
+    """
     fft_window = signal.windows.hann(win_length, False)
 
     # Window the time series.
@@ -221,6 +211,13 @@ def stft(y, win_length=640, hop_length=160):
 
 
 def istft(stft_matrix, win_length=640, hop_length=160):
+    """
+    computes the signal from the spectrogram
+    :param stft_matrix: The spectrogram of the signal
+    :param win_length: Size of each window
+    :param hop_length: Overlap between windows
+    :return: the original signal
+    """
     n_frames = stft_matrix.shape[1]
     y_rec = np.zeros(win_length + hop_length * (n_frames - 1), dtype=np.float64)
     ifft_window_sum = np.zeros_like(y_rec)
@@ -243,6 +240,12 @@ def istft(stft_matrix, win_length=640, hop_length=160):
 
 
 def phase_vocoder(spec, ratio):
+    """
+    correction of the phases of each frequency according to the shift of each window
+    :param spec: The spectrogram
+    :param ratio: a positive float64 reprenting the duration change
+    :return: The spectrogram after correction
+    """
     num_timesteps = int(spec.shape[1] / ratio)
     time_steps = np.arange(num_timesteps) * ratio
 
